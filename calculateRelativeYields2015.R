@@ -28,18 +28,25 @@ calculate_relative_yield <- function(yields, strips, fieldId, stripId) {
 
 
 # ---- Main ----
+# Parameters
+inputFile <- "Input/HY2015GP_GrainWeightOnly_171020.csv"
+harvestYear <- 2015
+yield.proj4string <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+
 # Load data
 strips <- readOGR("Input/Field_Plan_Final", "Field_Plan_Final")
 refPoints <- geojson_read("Input/CookEast_GeoreferencePoints_171117.json", what = "sp")
 boundary <- geojson_read("Input/CookEastBoundary_171106.json", what = "sp")
-y15 <- read.csv("Input/HY2015GP_GrainWeightOnly_171020.csv", stringsAsFactors = TRUE)
-y08 <- read.csv("Input/HY2008GP_CopiedFromRYAvg_171115.csv", stringsAsFactors = TRUE)
+y <- read.csv(inputFile, stringsAsFactors = TRUE)
+
 
 # Clean data
-y08 <- y08[!is.na(y08$GrainWeightWet), ]
-y08 <- droplevels(y08)
-y15 <- y15[!is.na(y15$GrainWeightWet), ]
-y15 <- droplevels(y15)
+#y08 <- y08[!is.na(y08$GrainWeightWet), ]
+#y08 <- droplevels(y08)
+#y15 <- y15[!is.na(y15$GrainWeightWet), ]
+#y15 <- droplevels(y15)
+y <- y[!is.na(y$GrainWeightWet), ]
+y <- droplevels(y)
 strips@data$Crop = NULL
 strips@data$Area = NULL
 strips@data$Perimeter = NULL
@@ -47,74 +54,106 @@ strips@data$Area_ac = NULL
 strips@data$Ind_Field = NULL
 
 # Convert csv gain mass data to spatial points and specify the datum
-y08sp <- SpatialPoints(y08[,5:6], proj4string = CRS("+proj=utm +zone=11 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"))
-y08sp <- SpatialPointsDataFrame(y08sp, y08)
-y15sp <- SpatialPoints(y15[,6:5], proj4string=CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
-y15sp <- SpatialPointsDataFrame(y15sp, y15)
+#y08sp <- SpatialPoints(y08[,5:6], proj4string = CRS("+proj=utm +zone=11 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+#y08sp <- SpatialPointsDataFrame(y08sp, y08)
+#y15sp <- SpatialPoints(y15[,6:5], proj4string=CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+#y15sp <- SpatialPointsDataFrame(y15sp, y15)
+
+ysp <- SpatialPoints(y[,6:5], proj4string=yield.proj4string)
+ysp <- SpatialPointsDataFrame(ysp, y)
 
 # Get data in WGS84
 WGS84 <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 strips.WGS84 <- spTransform(strips, WGS84)
-y08sp <- spTransform(y08sp, WGS84)
+#y08sp <- spTransform(y08sp, WGS84)
+ysp <- spTransform(ysp, WGS84)
 
 # Remove unwanted fields from strip file
 strips.WGS84 <- raster::intersect(boundary, strips.WGS84)
 
 # Calculate relative yields for 2008
-rel.yields <- subset(y08sp, FALSE)
-rel.yields$StripMean
-rel.yields$RelativeYield
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 1))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 2))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 3))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 4))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 5))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 6))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 1))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 2))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 3))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 4))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 5))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 6))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 1))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 2))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 3))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 4))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 5))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 6))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 7))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 8))
+#rel.yields <- subset(y08sp, FALSE)
+#rel.yields$StripMean
+#rel.yields$RelativeYield
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 1))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 2))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 3))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 4))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 5))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "A", 6))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 1))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 2))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 3))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 4))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 5))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "B", 6))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 1))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 2))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 3))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 4))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 5))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 6))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 7))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y08sp, strips.WGS84, "C", 8))
 
 # Calculate relative yields for 2015
-rel.yields <- subset(y15sp, FALSE)
+#rel.yields <- subset(y15sp, FALSE)
+#rel.yields$RelativeYield
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 1))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 2))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 3))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 4))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 5))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 6))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 1))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 2))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 3))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 4))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 5))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 6))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 1))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 2))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 3))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 4))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 5))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 6))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 7))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 8))
+
+# Calculate relative yields
+rel.yields <- subset(ysp, FALSE)
+rel.yields$StripMean
 rel.yields$RelativeYield
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 1))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 2))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 3))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 4))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 5))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "A", 6))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 1))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 2))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 3))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 4))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 5))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "B", 6))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 1))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 2))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 3))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 4))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 5))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 6))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 7))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(y15sp, strips.WGS84, "C", 8))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "A", 1))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "A", 2))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "A", 3))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "A", 4))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "A", 5))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "A", 6))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 1))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 2))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 3))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 4))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 5))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 6))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 1))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 2))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 3))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 4))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 5))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 6))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 7))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 8))
 
 # Cleanup
 rel.yields$FID = NULL
 
+#write.csv(rel.yields@data, "Output/hy2015relativeYields.csv", row.names=FALSE)
+#write.csv(rel.yields@data, "Output/hy2008relativeYields.csv", row.names=FALSE)
+write.csv(rel.yields@data, paste("Output/hy",toString(harvestYear),"relativeYields.csv",sep=""), row.names=FALSE)
 
-write.csv(rel.yields@data, "Output/hy2015relativeYields.csv", row.names=FALSE)
-write.csv(rel.yields@data, "Output/hy2008relativeYields.csv", row.names=FALSE)
+
+
 #---- Maps and testing ----
 graphCols <- c("purple", "chartreuse", "blue", "yellow", "red", "green", "sandybrown")
 
