@@ -29,15 +29,18 @@ calculate_relative_yield <- function(yields, strips, fieldId, stripId) {
 
 # ---- Main ----
 # Parameters
-inputFile <- "Input/HY2015GP_GrainWeightOnly_171020.csv"
-harvestYear <- 2015
-yield.proj4string <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+utmZone11n <- CRS("+proj=utm +zone=11 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
+WGS84 <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+
+inputFile <- "Input/HY2016GP_GrainWeightOnly_171117.csv"
+harvestYear <- 2016
+yield.proj4string <- WGS84
 
 # Load data
 strips <- readOGR("Input/Field_Plan_Final", "Field_Plan_Final")
 refPoints <- geojson_read("Input/CookEast_GeoreferencePoints_171117.json", what = "sp")
 boundary <- geojson_read("Input/CookEastBoundary_171106.json", what = "sp")
-y <- read.csv(inputFile, stringsAsFactors = TRUE)
+y <- read.csv(inputFile, stringsAsFactors = TRUE, skip = 1)
 
 
 # Clean data
@@ -54,13 +57,17 @@ ysp <- SpatialPoints(y[,6:5], proj4string=yield.proj4string)
 ysp <- SpatialPointsDataFrame(ysp, y)
 
 # Get data in WGS84
-WGS84 <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+#WGS84 <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 strips.WGS84 <- spTransform(strips, WGS84)
 #y08sp <- spTransform(y08sp, WGS84)
 ysp <- spTransform(ysp, WGS84)
 
 # Remove unwanted fields from strip file
 strips.WGS84 <- raster::intersect(boundary, strips.WGS84)
+
+# Split by crop since Field C Strip 1 and Strip 2 have both WW and SC planted
+ysp.WW <- ysp[ysp$Crop == "WW",]
+ysp.SC <- ysp[ysp$Crop == "SC",]
 
 # Calculate relative yields
 rel.yields <- subset(ysp, FALSE)
@@ -78,8 +85,12 @@ rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B",
 rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 4))
 rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 5))
 rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "B", 6))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 1))
-rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 2))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 1))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp.SC, strips.WGS84, "C", 1))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp.WW, strips.WGS84, "C", 1))
+#rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 2))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp.SC, strips.WGS84, "C", 2))
+rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp.WW, strips.WGS84, "C", 2))
 rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 3))
 rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 4))
 rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C", 5))
@@ -91,3 +102,9 @@ rel.yields <- rbind(rel.yields, calculate_relative_yield(ysp, strips.WGS84, "C",
 rel.yields$FID = NULL
 
 write.csv(rel.yields@data, paste("Output/hy",toString(harvestYear),"relativeYields.csv",sep=""), row.names=FALSE)
+
+# Plot
+graphCols <- c("purple", "chartreuse", "blue", "yellow", "red", "green", "sandybrown")
+plot(strips.WGS84)
+plot(rel.yields, pch=21, bg=graphCols[rel.yields$Crop], col=graphCols[rel.yields$Crop], cex=0.8, add=T)
+
